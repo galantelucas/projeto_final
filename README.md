@@ -1,7 +1,7 @@
 # 📊 Streamlit-FastAPI-GE-MinIO-DataPlatform
 
 Alunos:
-Wilkerson Carvalho -
+Wilkerson Carvalho - 2417568
 Lucas Galante - 2417572
 
 
