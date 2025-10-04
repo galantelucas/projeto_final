@@ -79,8 +79,8 @@ Plataforma moderna de validação e qualidade de dados com arquitetura de micros
 
 ```bash
 # Clone o repositório
-git clone <repo_url>
-cd <repo>
+git clone <https://github.com/galantelucas/projeto_final.git>
+cd <projeto_final>
 
 # Suba todos os serviços
 docker-compose up --build
@@ -104,3 +104,9 @@ docker-compose up --build
 - MinIO é inicializado com os buckets `bronze`, `silver` e `gold` públicos
 - DAGs podem ser adicionadas em `./airflow/dags` e são montadas via volume
 
+## ⚡ ** Considerações de Engenharia de Dados**
+
+- Pipeline confiável cobrindo coleta, armazenamento, processamento e organização de dados
+- Rastreabilidade garantida por buckets e DAGs do Airflow
+- Escalabilidade e concorrência via LocalExecutor; possibilidade de migrar para Celery/KubernetesExecutor para grandes volumes
+- Estrutura modular para adicionar novas fontes de dados e validações
