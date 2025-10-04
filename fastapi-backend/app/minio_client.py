@@ -9,8 +9,8 @@ class MinioClient:
         self.endpoint_url = os.getenv("MINIO_ENDPOINT", "http://minio:9000")
         self.access_key = os.getenv("MINIO_ACCESS_KEY", "minio")
         self.secret_key = os.getenv("MINIO_SECRET_KEY", "minio123")
-        self.bucket_name = "uploads"
-        
+        self.bucket_name = "bronze"
+
         self.s3_client = boto3.client(
             "s3",
             endpoint_url=self.endpoint_url,
@@ -23,7 +23,7 @@ class MinioClient:
         """Baixa arquivo do MinIO e retorna DataFrame"""
         try:
             response = self.s3_client.get_object(
-                Bucket=self.bucket_name, 
+                Bucket=self.bucket_name,
                 Key=file_key
             )
             # Lê o CSV diretamente do stream
@@ -31,7 +31,7 @@ class MinioClient:
             return df
         except ClientError as e:
             raise Exception(f"Erro ao baixar arquivo {file_key}: {str(e)}")
-    
+
     def file_exists(self, file_key: str) -> bool:
         """Verifica se arquivo existe no MinIO"""
         try:

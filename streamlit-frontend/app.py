@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from great_expectations.dataset import PandasDataset
-from io import BytesIO 
+from io import BytesIO
 
 # ✅ PRIMEIRO COMANDO STREAMLIT - OBRIGATÓRIO
 st.set_page_config(page_title="Data Validation Platform", layout="wide")
@@ -60,25 +60,25 @@ uploaded_file = st.file_uploader("Faça upload do arquivo CSV", type=["csv"])
 
 def display_validation_results(results, df):
     """Exibe resultados da validação da API"""
-    
+
     st.subheader("✅ Resultados da Validação")
-    
+
     # Métricas básicas
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Linhas", results["rows"])
     col2.metric("Colunas", results["cols"])
     col3.metric("Valores Nulos", results["nulls_total"])
     col4.metric("Média Numérica", results["basic_metrics"]["numeric_columns_mean"])
-    
+
     # Validações por coluna
     st.subheader("📊 Validações por Coluna")
     validation_df = pd.DataFrame.from_dict(
-        results["validation_results"], 
-        orient='index', 
+        results["validation_results"],
+        orient='index',
         columns=["Validação Aprovada"]
     )
     st.dataframe(validation_df)
-    
+
     # Nulos por coluna
     st.write("**🔍 Nulos por Coluna**")
     nulls_by_col = pd.DataFrame.from_dict(
@@ -87,11 +87,11 @@ def display_validation_results(results, df):
         columns=["Nulos"]
     )
     st.dataframe(nulls_by_col)
-    
+
     # Preview dos dados
     st.subheader("👀 Prévia dos Dados")
     st.dataframe(df.head())
-    
+
     # 📈 SEUS GRÁFICOS ATUAIS (mantidos)
     generate_visualizations(df)
 
@@ -208,37 +208,36 @@ def generate_visualizations(df):
         plt.tight_layout()
         st.pyplot(fig, use_container_width=False)
 
-# FLUXO PRINCIPAL - VERSÃO CORRIGIDA
-# FLUXO PRINCIPAL - VERSÃO CORRIGIDA (COM MANIPULAÇÃO CORRETA DO ARQUIVO)
+# FLUXO PRINCIPAL
 if uploaded_file is not None:
     if operation_mode == "🚀 Usar Backend API (Recomendado)" and MINIO_AVAILABLE:
         with st.spinner("Enviando para validação..."):
             try:
                 # 1. Testa API primeiro
                 st.write("🔍 Verificando conexão com serviços...")
-                
+
                 if not api_client.health_check():
                     st.error("❌ API offline. Usando processamento local...")
                     uploaded_file.seek(0)  # Reset do arquivo
                     df = pd.read_csv(uploaded_file)
                     process_local_validation(df)
-                
+
                 else:
                     # 2. FAZ UPLOAD REAL PARA MINIO (COM CÓPIA SEGURA)
                     st.write("📤 Enviando arquivo para storage...")
-                    
+
                     # Lê o conteúdo ANTES de fazer upload
                     uploaded_file.seek(0)
                     file_content = uploaded_file.read()
-                    
+
                     # Faz upload da cópia
                     file_key = minio_client.upload_fileobj(file_content, uploaded_file.name)
                     st.success(f"✅ Arquivo '{file_key}' salvo no MinIO")
-                    
+
                     # 3. CHAMA API PARA VALIDAÇÃO
                     st.write("🔍 Validando dados via API...")
                     results = api_client.validate_file(file_key)
-                    
+
                     if results:
                         st.success("✅ Validação concluída via API!")
                         # Usa a cópia em memória para ler o CSV
@@ -249,7 +248,7 @@ if uploaded_file is not None:
                         st.warning("🔄 Usando processamento local...")
                         df = pd.read_csv(BytesIO(file_content))
                         process_local_validation(df)
-                    
+
             except Exception as e:
                 st.error(f"🚨 Erro na integração: {str(e)}")
                 st.warning("🔄 Usando processamento local...")
@@ -260,14 +259,14 @@ if uploaded_file is not None:
                     process_local_validation(df)
                 except:
                     st.error("❌ Não foi possível processar o arquivo")
-    
+
     else:
-        # 🔧 MODO LOCAL (seu código original) - SEMPRE FUNCIONA
+        # 🔧 MODO LOCAL
         if operation_mode == "🚀 Usar Backend API (Recomendado)" and not MINIO_AVAILABLE:
             st.warning("🔧 Modo local - Integração MinIO/API não disponível")
         else:
             st.warning("🔧 Usando processamento local...")
-        
+
         # Reset do arquivo antes de ler
         uploaded_file.seek(0)
         df = pd.read_csv(uploaded_file)

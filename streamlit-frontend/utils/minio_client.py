@@ -9,8 +9,8 @@ class MinioClient:
         self.endpoint_url = os.getenv("MINIO_ENDPOINT", "http://minio:9000")
         self.access_key = os.getenv("MINIO_ACCESS_KEY", "minio")
         self.secret_key = os.getenv("MINIO_SECRET_KEY", "minio123")
-        self.bucket_name = "uploads"
-        
+        self.bucket_name = "bronze"
+
         self.s3_client = boto3.client(
             "s3",
             endpoint_url=self.endpoint_url,
@@ -38,7 +38,7 @@ class MinioClient:
                 file_obj = BytesIO(file_content)
             else:
                 file_obj = file_content
-            
+
             self.s3_client.upload_fileobj(
                 Fileobj=file_obj,
                 Bucket=self.bucket_name,
