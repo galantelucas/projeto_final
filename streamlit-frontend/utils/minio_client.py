@@ -1,23 +1,14 @@
-import boto3
 import os
 import streamlit as st
 from botocore.exceptions import ClientError
 from io import BytesIO
+from config.settings import make_s3_client, BRONZE_BUCKET
 
 class MinioClient:
     def __init__(self):
-        self.endpoint_url = os.getenv("MINIO_ENDPOINT", "http://minio:9000")
-        self.access_key = os.getenv("MINIO_ACCESS_KEY", "minio")
-        self.secret_key = os.getenv("MINIO_SECRET_KEY", "minio123")
-        self.bucket_name = "bronze"
-
-        self.s3_client = boto3.client(
-            "s3",
-            endpoint_url=self.endpoint_url,
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
-            verify=False
-        )
+        # Cria cliente S3 centralizado e usa o bucket padrão definido em config
+        self.s3_client = make_s3_client()
+        self.bucket_name = os.getenv("MINIO_BUCKET", BRONZE_BUCKET)
         self._ensure_bucket_exists()
 
     def _ensure_bucket_exists(self):

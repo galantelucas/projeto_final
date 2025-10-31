@@ -1,19 +1,14 @@
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-import boto3
 import pandas as pd
 import io
 import os
+from config.settings import make_s3_client, BRONZE_BUCKET, SILVER_BUCKET
 
-# ==============================
-# ⚙️ CONFIGURAÇÕES DO MINIO
-# ==============================
-MINIO_ENDPOINT = "minio:9000"
-MINIO_ACCESS_KEY = "minio"
-MINIO_SECRET_KEY = "minio123"
-BRONZE_BUCKET = "bronze"
-SILVER_BUCKET = "silver"
+# A configuração do MinIO foi centralizada em `config/settings.py`.
+# Use `make_s3_client()` para criar o cliente S3 e manter as credenciais
+# fora dos arquivos de DAG.
 
 # ==============================
 # 🔧 FUNÇÕES
@@ -21,12 +16,7 @@ SILVER_BUCKET = "silver"
 
 def list_bronze_files():
     """Lista todos os arquivos disponíveis no bucket bronze."""
-    s3 = boto3.client(
-        "s3",
-        endpoint_url=f"http://{MINIO_ENDPOINT}",
-        aws_access_key_id=MINIO_ACCESS_KEY,
-        aws_secret_access_key=MINIO_SECRET_KEY,
-    )
+    s3 = make_s3_client()
     response = s3.list_objects_v2(Bucket=BRONZE_BUCKET)
     if "Contents" not in response:
         return []
@@ -36,12 +26,7 @@ def list_bronze_files():
 
 def convert_to_parquet():
     """Lê os arquivos do bronze, converte para Parquet e envia para o silver."""
-    s3 = boto3.client(
-        "s3",
-        endpoint_url=f"http://{MINIO_ENDPOINT}",
-        aws_access_key_id=MINIO_ACCESS_KEY,
-        aws_secret_access_key=MINIO_SECRET_KEY,
-    )
+    s3 = make_s3_client()
 
     files = list_bronze_files()
     if not files:

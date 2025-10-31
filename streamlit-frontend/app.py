@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from great_expectations.dataset import PandasDataset
 from io import BytesIO
+import os
+from config.settings import make_s3_client
 
 # ✅ PRIMEIRO COMANDO STREAMLIT - OBRIGATÓRIO
 st.set_page_config(page_title="Data Validation Platform", layout="wide")
@@ -35,18 +37,11 @@ with col1:
 
 with col2:
     try:
-        import boto3
-        # Tenta conectar ao MinIO
-        s3_client = boto3.client(
-            "s3",
-            endpoint_url="http://minio:9000",
-            aws_access_key_id="minio",
-            aws_secret_access_key="minio123",
-            verify=False
-        )
+        # Usa o cliente S3 centralizado para checar disponibilidade do MinIO
+        s3_client = make_s3_client()
         s3_client.list_buckets()
         st.success("✅ MinIO Storage Online")
-    except:
+    except Exception:
         st.error("❌ MinIO Storage Offline")
 
 # Modo de operação

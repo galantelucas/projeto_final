@@ -43,9 +43,11 @@ services:
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - PYTHONPATH=/opt/project
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
+      - ./:/opt/project
     depends_on:
       - postgres
     networks:
@@ -60,9 +62,11 @@ services:
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - PYTHONPATH=/opt/project
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
+      - ./:/opt/project
     depends_on:
       - airflow-init
     networks:
@@ -75,9 +79,11 @@ services:
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - PYTHONPATH=/opt/project
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
+      - ./:/opt/project
     depends_on:
       - airflow-init
     networks:
@@ -91,19 +97,17 @@ services:
     container_name: streamlit-frontend
     ports:
       - "8501:8501"
-    environment:
-      - API_URL=http://fastapi-backend:8000
-      - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ACCESS_KEY=minio
-      - MINIO_SECRET_KEY=minio123
-      - MINIO_BUCKET=bronze
-      - STREAMLIT_SERVER_MAXUPLOADSIZE=1024
+    env_file:
+      - .env
     depends_on:
       - fastapi-backend
       - minio
     volumes:
       - ./streamlit-frontend:/app
+      - ./:/opt/project
     restart: unless-stopped
+    environment:
+      - PYTHONPATH=/opt/project
     networks:
       - data_network
 
@@ -115,14 +119,15 @@ services:
     container_name: fastapi-backend
     ports:
       - "8000:8000"
-    environment:
-      - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ACCESS_KEY=minio
-      - MINIO_SECRET_KEY=minio123
+    env_file:
+      - .env
     depends_on:
       - minio
     volumes:
       - ./fastapi-backend:/app
+      - ./:/opt/project
+    environment:
+      - PYTHONPATH=/opt/project
     restart: unless-stopped
     networks:
       - data_network
