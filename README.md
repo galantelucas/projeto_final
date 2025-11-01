@@ -1,112 +1,167 @@
-# 📊 Streamlit-FastAPI-GE-MinIO-DataPlatform
+# 📊 Data Platform — Documentação Técnica
 
-Alunos:
-Wilkerson Carvalho - 2417568
-Lucas Galante - 2417572
+Autores:
+- Wilkerson Carvalho - 2417568
+- Lucas Galante - 2417572
 
+## 🎯 Visão geral
 
-## 🎯 **Visão Geral**
-Plataforma moderna de validação e qualidade de dados com arquitetura de microserviços, combinando análise automatizada com Great Expectations, storage cloud-native e orquestração com Airflow.
+Este repositório contém uma plataforma de ingestão, validação e orquestração de dados construída com Streamlit (UI), FastAPI (API), MinIO (object storage), Great Expectations (validação) e Apache Airflow (orquestração). O projeto segue o padrão medallion (bronze → silver → gold) e foi organizado para execução via Docker Compose.
 
----
-
-## 🏗️ **Arquitetura**
-
-### **Stack Tecnológica**
-- **Frontend:** Streamlit (UI/UX)
-- **Backend:** FastAPI (Microserviço)
-- **Validation:** Great Expectations
-- **Storage:** MinIO (S3-compatible)
-- **Orchestration:** Airflow + Docker Compose
-- **Database:** Postgres (Airflow backend)
+O objetivo desta documentação é fornecer instruções técnicas para instalar, configurar, executar e estender a plataforma em um ambiente local/containerizado.
 
 ---
 
-### **Serviços**
-| Serviço | Porta | Função |
-|---------|-------|--------|
-| `streamlit-frontend` | 8501 | Interface visual do usuário |
-| `fastapi-backend` | 8000 | API de validação de dados |
-| `minio` | 9000/9001 | Storage object (S3-like) |
-| `create_buckets` | - | Cria buckets `bronze`, `silver` e `gold` no MinIO |
-| `postgres` | 5432 | Banco de dados Airflow |
-| `airflow-init` | - | Inicializa DB Airflow e cria usuário admin |
-| `airflow-webserver` | 8080 | Interface web do Airflow |
-| `airflow-scheduler` | - | Executa DAGs do Airflow |
+## 🏗️ Arquitetura e componentes
+
+Diagrama de arquitetura: `docs/architecture.svg`
+
+### Stack tecnológica
+- Frontend: Streamlit
+- Backend: FastAPI
+- Validação: Great Expectations
+- Storage: MinIO (S3-compatible)
+- Orquestração: Apache Airflow (DAGs em `airflow/dags`)
+- Banco de dados do Airflow: Postgres (via Docker Compose)
+
+### Serviços principais (resumo)
+| Serviço | Porta | Observação |
+|--------:|:-----:|:----------|
+| `streamlit-frontend` | 8501 | Interface para upload/visualização de dados |
+| `fastapi-backend` | 8000 | Endpoints de validação e testes (/health, /test-minio, /validate) |
+| `minio` | 9000 (API) / 9001 (Console) | Object storage; buckets: `bronze`, `silver`, `gold` |
+| `create_buckets` | — | Serviço de inicialização que cria buckets no MinIO (usado no compose)
+| `postgres` | 5432 | Backend do Airflow |
+| `airflow-webserver` | 8080 | UI do Airflow; DAGs disponíveis em `airflow/dags` |
 
 ---
 
-## 🚀 **Funcionalidades**
+## Estrutura do repositório (resumida)
 
-### **Validação de Dados**
-- ✅ Análise automática de schemas e tipos de dados
-- ✅ Detecção inteligente de colunas de data
-- ✅ Validações com Great Expectations (valores nulos, unicidade, etc.)
-- ✅ Métricas de qualidade (completude, consistência)
-
-### **Visualização & Análise**
-- 📈 Gráficos automáticos (histogramas, boxplots, séries temporais)
-- 📊 Estatísticas descritivas completas
-- 🔍 Matriz de correlação para variáveis numéricas
-- 📋 Data profiling automático
-
-### **Storage & Escalabilidade**
-- ☁️ Storage cloud-native com MinIO (S3 API)
-- 🔄 Processamento assíncrono via API
-- 📁 Suporte a múltiplos formatos (CSV, futuramente Parquet, JSON)
-- 🏗️ Arquitetura extensível para novos conectores
-
-### **Orquestração e Workflow**
-- 🛠️ Airflow com LocalExecutor e Postgres como backend
-- ⏱️ Inicialização automática do DB e criação do usuário admin (`admin/admin`)
-- 📦 DAGs podem processar arquivos de MinIO automaticamente
-- ✅ Wait-for-it integrado para garantir que Postgres e MinIO estejam prontos antes de iniciar Airflow
+- `airflow/` — Dockerfile, requisitos e DAGs (`airflow/dags/bronze_to_silver_dag.py`, `airflow/dags/silver_to_gold_dag.py`)
+- `fastapi-backend/app/` — aplicação FastAPI (`main.py`, `minio_client.py`, `validator.py`, `schemas.py`)
+- `streamlit-frontend/` — app Streamlit (`app.py`) e utilitários
+- `config/` — módulo central de configurações (variáveis de ambiente, helper `make_s3_client()`)
+- `great_expectations/` — guia e (futuras) expectativas
+- `storage/minio_data/` — dados usados localmente pelo MinIO (ex.: `bronze/vendas_exemplo.csv`)
+- `docker-compose.yml` — orquestração dos containers
 
 ---
 
-## 🔄 **Fluxo de Dados**
+## ⚙️ Requisitos
 
-1. **Upload CSV** → Streamlit UI
-2. **Storage** → MinIO Bucket (`bronze`)
-3. **Orquestração** → Airflow DAGs processam e movem dados de `bronze → silver → gold`
-4. **Validação** → FastAPI + Great Expectations
-5. **Resultados** → Streamlit Dashboard
-6. **Fallback** → Processamento local se API offline
+- Docker (>= 20.x) e Docker Compose
+- (Opcional) Python 3.9+ para executar serviços localmente sem Docker
+
+Recomendado: ter 4GB de RAM livre para executar todos os serviços locais.
 
 ---
 
-## 🛠️ **Como Executar**
+## � Quickstart — execução via Docker Compose
+
+1. Copie o arquivo de exemplo de variáveis de ambiente e ajuste os valores:
 
 ```bash
-# Clone o repositório
-git clone <https://github.com/galantelucas/projeto_final.git>
-cd <projeto_final>
-
-# Suba todos os serviços
-docker-compose up --build
+cp .env.example .env
+# Edite .env conforme necessário (especialmente MINIO_* e nomes de buckets)
 ```
 
-### **Acessos**
-- **Frontend Streamlit:** http://localhost:8501
-- **API FastAPI:** http://localhost:8000/docs
-- **MinIO Console:** http://localhost:9001
-  - Usuário: `minio`
-  - Senha: `minio123`
-- **Airflow Webserver:** http://localhost:8080
-  - Usuário: `admin`
-  - Senha: `admin`
+2. Suba a stack (build + start):
+
+```bash
+docker-compose up --build -d
+```
+
+3. Verifique status e acesse as UIs:
+
+- Streamlit: http://localhost:8501
+- FastAPI (docs): http://localhost:8000/docs
+- MinIO Console: http://localhost:9001
+- Airflow Webserver: http://localhost:8080
+
+4. Logs e troubleshooting:
+
+```bash
+docker-compose logs -f streamlit-frontend
+docker-compose logs -f fastapi-backend
+docker-compose logs -f minio
+docker-compose logs -f airflow-webserver
+```
+
+Observações importantes:
+- O projeto já contém `.env.example` com variáveis necessárias. Nunca comite `.env` com credenciais reais (há `.gitignore` para isso).
+- `docker-compose.yml` monta o diretório do projeto dentro dos containers em `/opt/project` e define `PYTHONPATH=/opt/project` para permitir importações de `config`.
 
 ---
 
-## ⚡ **Observações Técnicas**
-- Airflow usa **LocalExecutor + Postgres** para execução paralela segura
-- O init do Airflow aguarda o Postgres estar pronto antes de inicializar o DB e criar o usuário
-- MinIO é inicializado com os buckets `bronze`, `silver` e `gold` públicos
-- DAGs podem ser adicionadas em `./airflow/dags` e são montadas via volume
+## 🔐 Configuração e variáveis de ambiente
 
-## ⚡ ** Considerações de Engenharia de Dados**
+As variáveis principais (definidas em `.env` ou ambiente do container):
 
-- Pipeline confiável cobrindo coleta, armazenamento, processamento e organização de dados
-- Rastreabilidade garantida por buckets e DAGs do Airflow
-- Escalabilidade e concorrência via LocalExecutor; possibilidade de migrar para Celery/KubernetesExecutor para grandes volumes
-- Estrutura modular para adicionar novas fontes de dados e validações
+- MINIO_ENDPOINT — endpoint MinIO (ex.: `minio:9000`)
+- MINIO_ACCESS_KEY — access key do MinIO
+- MINIO_SECRET_KEY — secret key do MinIO
+- BRONZE_BUCKET — nome do bucket bronze (ex.: `bronze`)
+- SILVER_BUCKET — nome do bucket silver (ex.: `silver`)
+- GOLD_BUCKET — nome do bucket gold (ex.: `gold`)
+- API_URL — URL base da API FastAPI (usada pelo frontend)
+- STREAMLIT_SERVER_MAXUPLOADSIZE — (opcional) limite de upload do Streamlit
+
+Veja `./.env.example` para valores padrões usados em desenvolvimento.
+
+---
+
+## ▶️ Como os DAGs funcionam (Airflow)
+
+- Os DAGs estão em `airflow/dags` e são detectados automaticamente pelo Airflow se o serviço for iniciado com o volume que aponta para esse diretório.
+- Principais DAGs:
+  - `bronze_to_silver_dag.py`: converte CSVs do bucket `bronze` para Parquet no `silver`.
+  - `silver_to_gold_dag.py`: agrega os Parquets do `silver` e escreve os resultados no `gold` (resumo/aggregação por período).
+
+Como acionar manualmente (via UI): vá para o Airflow Webserver em `http://localhost:8080`, selecione o DAG e clique em `Trigger DAG`.
+
+
+---
+
+## 🧪 Endpoints úteis (FastAPI)
+
+- GET `/` — rota raiz
+- GET `/health` — verifica saúde do serviço
+- GET `/test` — teste simples
+- GET `/test-minio` — verifica conexão com MinIO
+- POST `/validate` — endpoint para validação (veja `fastapi-backend/app/schemas.py` e `validator.py`)
+
+Exemplo rápido (curl):
+
+```bash
+curl -s http://localhost:8000/health
+```
+
+---
+
+## 🧭 Desenvolvimento local (alternativa ao Docker)
+
+Se preferir rodar componentes localmente sem Docker:
+
+1. Crie e ative um virtualenv com Python 3.9+.
+2. Instale dependências nos `requirements.txt` (cada serviço tem o seu):
+
+```bash
+pip install -r fastapi-backend/requirements.txt
+pip install -r streamlit-frontend/requirements.txt
+pip install -r airflow/requirements.txt
+```
+
+3. Exporte variáveis de ambiente conforme `.env.example` e execute os serviços (ex.: `uvicorn fastapi-backend.app.main:app --reload --host 0.0.0.0 --port 8000`, `streamlit run streamlit-frontend/app.py`).
+
+Observação: ao rodar localmente, garanta que o MinIO esteja acessível e que `config/settings.py` encontre as variáveis de ambiente.
+
+---
+
+## 🧰 Troubleshooting comum
+
+- ImportError/Dependências: se faltar pacotes dentro de um container, verifique os `requirements.txt` e reconstrua a imagem (`docker-compose build --no-cache`).
+- Erros de import `config`: o compose monta o projeto em `/opt/project` e define `PYTHONPATH=/opt/project`; se alterar, ajuste o `PYTHONPATH` ou copie `config/` para o pacote Python do container.
+- MinIO: verifique credenciais em `.env`; para console, acesse `http://localhost:9001`.
+- Airflow: se DAGs não aparecerem, confirme se o volume do DAGs está montado corretamente e verifique os logs do `airflow-webserver`.
+

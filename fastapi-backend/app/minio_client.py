@@ -1,23 +1,14 @@
-import boto3
 import pandas as pd
 from io import BytesIO
 import os
 from botocore.exceptions import ClientError
+from config.settings import make_s3_client, BRONZE_BUCKET
 
 class MinioClient:
     def __init__(self):
-        self.endpoint_url = os.getenv("MINIO_ENDPOINT", "http://minio:9000")
-        self.access_key = os.getenv("MINIO_ACCESS_KEY", "minio")
-        self.secret_key = os.getenv("MINIO_SECRET_KEY", "minio123")
-        self.bucket_name = "bronze"
-
-        self.s3_client = boto3.client(
-            "s3",
-            endpoint_url=self.endpoint_url,
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
-            verify=False
-        )
+        # Usa cliente S3 centralizado a partir de `config.settings`
+        self.s3_client = make_s3_client()
+        self.bucket_name = os.getenv("MINIO_BUCKET", BRONZE_BUCKET)
 
     def download_file(self, file_key: str) -> pd.DataFrame:
         """Baixa arquivo do MinIO e retorna DataFrame"""
